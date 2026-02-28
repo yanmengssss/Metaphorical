@@ -1,65 +1,233 @@
-import Image from "next/image";
+/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unused-vars, react-hooks/exhaustive-deps */
+"use client";
+
+import { useEffect, useState, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Plus, Settings, FileEdit } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { CreateProjectDialog } from "@/components/CreateProjectDialog";
+import { EditProjectDialog } from "@/components/EditProjectDialog";
+import { CreateTableDialog } from "@/components/CreateTableDialog";
+import { EditTableDialog } from "@/components/EditTableDialog";
+import { ProjectList } from "@/components/ProjectList";
+import { TableList } from "@/components/TableList";
+import { TableLogsView } from "@/components/TableLogsView";
+import { toast } from "sonner";
+
+function DashboardContent() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+
+  const projectId = searchParams.get("projectId") || "";
+  const tableId = searchParams.get("tableId") || "";
+
+  const [projects, setProjects] = useState<any[]>([]);
+  const [tables, setTables] = useState<any[]>([]);
+  const [loadingProjects, setLoadingProjects] = useState(true);
+  const [loadingTables, setLoadingTables] = useState(false);
+
+  const [isCreateProjectOpen, setIsCreateProjectOpen] = useState(false);
+  const [isEditProjectOpen, setIsEditProjectOpen] = useState(false);
+  const [isCreateTableOpen, setIsCreateTableOpen] = useState(false);
+  const [isEditTableOpen, setIsEditTableOpen] = useState(false);
+
+  const activeProject = projects.find(p => p._id === projectId);
+  const activeTable = tables.find(t => t._id === tableId);
+
+  // Fetch projects on mount
+  const fetchProjects = async () => {
+    try {
+      setLoadingProjects(true);
+      const res = await fetch("/api/projects");
+      const data = await res.json();
+      if (data.code === 200) {
+        setProjects(data.data);
+      }
+    } catch (error) {
+      toast.error("获取项目失败");
+    } finally {
+      setLoadingProjects(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchProjects();
+  }, []);
+
+  // Fetch tables when project changes
+  const fetchTables = async (pId: string) => {
+    if (!pId) {
+      setTables([]);
+      return;
+    }
+    try {
+      setLoadingTables(true);
+      const res = await fetch(`/api/projects/${pId}/tables`);
+      const data = await res.json();
+      if (data.code === 200) {
+        setTables(data.data);
+      }
+    } catch (error) {
+      toast.error("获取表失败")
+    } finally {
+      setLoadingTables(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchTables(projectId);
+  }, [projectId]);
+
+  const handleProjectChange = (val: string) => {
+    if (val === "all") {
+      router.push(`/`);
+    } else {
+      router.push(`/?projectId=${val}`);
+    }
+  };
+
+  const handleTableChange = (val: string) => {
+    if (val === "all") {
+      router.push(`/?projectId=${projectId}`);
+    } else {
+      router.push(`/?projectId=${projectId}&tableId=${val}`);
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="border border-slate-200 rounded-lg p-4 bg-white shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+        <div className="flex flex-wrap items-center gap-4">
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-medium text-slate-600">选择项目</span>
+            <Select value={projectId || "all"} onValueChange={handleProjectChange}>
+              <SelectTrigger className="w-[200px]">
+                <SelectValue placeholder="选择项目..." />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">-- 所有项目 --</SelectItem>
+                {projects.map((p) => (
+                  <SelectItem key={p._id} value={p._id}>
+                    {p.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-medium text-slate-600 border-l pl-4 ml-2">选择表</span>
+            <Select value={tableId || "all"} onValueChange={handleTableChange} disabled={!projectId}>
+              <SelectTrigger className="w-[200px]">
+                <SelectValue placeholder="选择数据表..." />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">-- 所有表 --</SelectItem>
+                {tables.map((t) => (
+                  <SelectItem key={t._id} value={t._id}>
+                    {t.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2">
+          {projectId && activeProject ? (
+            <Button variant="outline" onClick={() => setIsEditProjectOpen(true)}>
+              <Settings className="mr-2 h-4 w-4" /> 编辑项目
+            </Button>
+          ) : (
+            <Button onClick={() => setIsCreateProjectOpen(true)}>
+              <Plus className="mr-2 h-4 w-4" /> 创建项目
+            </Button>
+          )}
+
+          {tableId && activeTable && (
+            <Button variant="outline" onClick={() => setIsEditTableOpen(true)}>
+              <FileEdit className="mr-2 h-4 w-4" /> 编辑表
+            </Button>
+          )}
+          {projectId && !tableId && (
+            <Button onClick={() => setIsCreateTableOpen(true)}>
+              <Plus className="mr-2 h-4 w-4" /> 创建表
+            </Button>
+          )}
+        </div>
+      </div>
+
+      <div className="mt-8 rounded-xl border border-slate-100 bg-slate-50/50 p-6 min-h-[500px]">
+        {!projectId ? (
+          <div className="space-y-6">
+            <div className="flex items-center justify-between">
+              <h2 className="text-xl font-semibold text-slate-800">所有项目</h2>
+            </div>
+            <ProjectList
+              projects={projects}
+              loading={loadingProjects}
+              onUpdate={fetchProjects}
+            />
+          </div>
+        ) : !tableId ? (
+          <div className="space-y-6">
+            <div className="flex items-center justify-between">
+              <h2 className="text-xl font-semibold text-slate-800">{activeProject?.name} 的数据表</h2>
+            </div>
+            <TableList
+              tables={tables}
+              projectId={projectId}
+              loading={loadingTables}
+              onUpdate={() => fetchTables(projectId)}
+            />
+          </div>
+        ) : (
+          <TableLogsView projectId={projectId} tableId={tableId} />
+        )}
+      </div>
+
+      <CreateProjectDialog
+        open={isCreateProjectOpen}
+        onOpenChange={setIsCreateProjectOpen}
+        onSuccess={fetchProjects}
+      />
+      {activeProject && (
+        <EditProjectDialog
+          project={activeProject}
+          open={isEditProjectOpen}
+          onOpenChange={setIsEditProjectOpen}
+          onSuccess={fetchProjects}
+        />
+      )}
+      <CreateTableDialog
+        projectId={projectId}
+        open={isCreateTableOpen}
+        onOpenChange={setIsCreateTableOpen}
+        onSuccess={() => fetchTables(projectId)}
+      />
+      {activeTable && (
+        <EditTableDialog
+          table={activeTable}
+          open={isEditTableOpen}
+          onOpenChange={setIsEditTableOpen}
+          onSuccess={() => fetchTables(projectId)}
+        />
+      )}
+    </div>
+  );
+}
 
 export default function Home() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
-    </div>
+    <Suspense fallback={<div className="p-8 text-center text-slate-500 animate-pulse">加载中...</div>}>
+      <DashboardContent />
+    </Suspense>
   );
 }
