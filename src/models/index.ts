@@ -25,6 +25,7 @@ export interface ITableColumn {
   // Let's stick to "key", "label" (for display), "type", "defaultValue".
   type: string;
   defaultValue?: any;
+  enumOptions?: { key: string; label: string }[];
 }
 
 export interface IMessageType {
@@ -54,7 +55,11 @@ const TableSchema: Schema = new Schema({
     key: { type: String, required: true },
     label: { type: String, required: false }, // Mapping "value" to label/description
     type: { type: String, required: true }, // string, number, date, boolean
-    defaultValue: { type: Schema.Types.Mixed }
+    defaultValue: { type: Schema.Types.Mixed },
+    enumOptions: [{
+      key: { type: String },
+      label: { type: String }
+    }]
   }]
 }, { timestamps: true });
 

@@ -70,7 +70,7 @@ export function TableList({ tables, projectId, loading, onEdit }: TableListProps
             </div>
             <div className="space-y-2 text-sm text-gray-600">
               <div className="flex justify-between">
-                <span>Message Types:</span>
+                <span>日志类型:</span>
                 <span className="font-medium">{table.messageTypes.length}</span>
               </div>
               <div className="flex justify-between">

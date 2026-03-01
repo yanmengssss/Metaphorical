@@ -108,12 +108,12 @@ export function ProjectList({ projects, loading, onUpdate }: ProjectListProps) {
             </div>
           </CardContent>
           <CardFooter className="justify-between">
-            <Link href={`/projects/${project._id}`} passHref>
+            {/* <Link href={`/projects/${project._id}`} passHref>
               <Button variant="outline" size="sm">
                 <Eye className="mr-2 h-4 w-4" />
                 查看数据
               </Button>
-            </Link>
+            </Link> */}
             <Button
               variant="ghost"
               size="sm"

@@ -37,6 +37,7 @@ function DashboardContent() {
   const [isEditProjectOpen, setIsEditProjectOpen] = useState(false);
   const [isCreateTableOpen, setIsCreateTableOpen] = useState(false);
   const [isEditTableOpen, setIsEditTableOpen] = useState(false);
+  const [selectedTableForEdit, setSelectedTableForEdit] = useState<any>(null);
 
   const activeProject = projects.find(p => p._id === projectId);
   const activeTable = tables.find(t => t._id === tableId);
@@ -164,7 +165,7 @@ function DashboardContent() {
         </div>
       </div>
 
-      <div className="mt-8 rounded-xl border border-slate-100 bg-slate-50/50 p-6 min-h-[500px]">
+      <div className="mt-8 rounded-xl border border-slate-100 bg-slate-50/50 p-6 min-h-[500px] px-0">
         {!projectId ? (
           <div className="space-y-6">
             <div className="flex items-center justify-between">
@@ -186,6 +187,10 @@ function DashboardContent() {
               projectId={projectId}
               loading={loadingTables}
               onUpdate={() => fetchTables(projectId)}
+              onEdit={(table) => {
+                setSelectedTableForEdit(table);
+                setIsEditTableOpen(true);
+              }}
             />
           </div>
         ) : (
@@ -212,11 +217,14 @@ function DashboardContent() {
         onOpenChange={setIsCreateTableOpen}
         onSuccess={() => fetchTables(projectId)}
       />
-      {activeTable && (
+      {(activeTable || selectedTableForEdit) && (
         <EditTableDialog
-          table={activeTable}
+          table={activeTable || selectedTableForEdit}
           open={isEditTableOpen}
-          onOpenChange={setIsEditTableOpen}
+          onOpenChange={(open) => {
+            setIsEditTableOpen(open);
+            if (!open) setSelectedTableForEdit(null);
+          }}
           onSuccess={() => fetchTables(projectId)}
         />
       )}

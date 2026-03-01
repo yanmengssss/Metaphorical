@@ -1,9 +1,9 @@
 /* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unused-vars, react-hooks/exhaustive-deps */
 "use client";
 
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { format } from "date-fns";
-import { RefreshCw } from "lucide-react";
+import { RefreshCw, Copy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -17,6 +17,43 @@ import {
 import { DatePicker } from "@/components/DatePicker";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+
+const MAX_CELL_LEN = 28;
+
+function truncate(str: string, max = MAX_CELL_LEN) {
+  return str.length > max ? str.slice(0, max) + "…" : str;
+}
+
+function CopyCell({ full, display, mono = false, children }: { full: string; display?: string; mono?: boolean; children?: React.ReactNode }) {
+  const handleCopy = () => {
+    navigator.clipboard.writeText(full);
+    toast.success("已复制");
+  };
+  return (
+    <TooltipProvider delayDuration={300}>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <span
+            onClick={handleCopy}
+            className={`cursor-pointer select-none group inline-flex items-center gap-1 rounded px-0.5 hover:bg-muted/60 transition-colors${mono ? " font-mono text-xs text-muted-foreground" : ""}`}
+          >
+            {children ?? (display ?? truncate(full))}
+            <Copy className="h-3 w-3 opacity-0 group-hover:opacity-40 shrink-0 transition-opacity" />
+          </span>
+        </TooltipTrigger>
+        <TooltipContent side="bottom" className="max-w-xs break-all">
+          {full}
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  );
+}
 
 export default function GlobalLogs() {
   const [logs, setLogs] = useState([]);
@@ -65,10 +102,10 @@ export default function GlobalLogs() {
       {/* Filters */}
       <div className="bg-white p-4 rounded-lg border shadow-sm space-y-4">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <Input 
-            placeholder="Log ID" 
-            value={filterLogId} 
-            onChange={(e) => setFilterLogId(e.target.value)} 
+          <Input
+            placeholder="Log ID"
+            value={filterLogId}
+            onChange={(e) => setFilterLogId(e.target.value)}
           />
           <DatePicker date={startDate} setDate={setStartDate} placeholder="Start Date" />
           <DatePicker date={endDate} setDate={setEndDate} placeholder="End Date" />
@@ -83,39 +120,48 @@ export default function GlobalLogs() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="w-[150px]">Project</TableHead>
-              <TableHead className="w-[150px]">Table</TableHead>
-              <TableHead className="w-[180px]">Time</TableHead>
-              <TableHead>Content (JSON)</TableHead>
+              <TableHead className="text-center w-[120px]">日志 ID</TableHead>
+              <TableHead className="text-center w-[150px]">Project</TableHead>
+              <TableHead className="text-center w-[150px]">Table</TableHead>
+              <TableHead className="text-center w-[180px]">Time</TableHead>
+              <TableHead className="text-center">Content (JSON)</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {loading ? (
               <TableRow>
-                <TableCell colSpan={4} className="text-center h-24 text-muted-foreground">
+                <TableCell colSpan={5} className="text-center h-24 text-muted-foreground">
                   Loading...
                 </TableCell>
               </TableRow>
             ) : logs.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={4} className="text-center h-24 text-muted-foreground">
+                <TableCell colSpan={5} className="text-center h-24 text-muted-foreground">
                   No logs found.
                 </TableCell>
               </TableRow>
             ) : (
               logs.map((log: any) => (
                 <TableRow key={log._id}>
-                  <TableCell className="font-medium">
-                    {log.project?.name || "Unknown"}
+                  <TableCell className="text-center">
+                    <CopyCell full={log._id} mono />
                   </TableCell>
-                  <TableCell>
-                    <Badge variant="outline">{log.table?.label || log.table?.key || "Unknown"}</Badge>
+                  <TableCell className="text-center font-medium">
+                    <CopyCell full={log.project?.name || "Unknown"} />
                   </TableCell>
-                  <TableCell className="font-mono text-xs text-muted-foreground">
-                    {format(new Date(log.createdAt), "yyyy-MM-dd HH:mm:ss")}
+                  <TableCell className="text-center">
+                    <CopyCell full={log.table?.label || log.table?.key || "Unknown"}>
+                      <Badge variant="outline">{truncate(log.table?.label || log.table?.key || "Unknown", 16)}</Badge>
+                    </CopyCell>
                   </TableCell>
-                  <TableCell className="font-mono text-xs break-all">
-                    {JSON.stringify(log.data)}
+                  <TableCell className="text-center">
+                    <CopyCell
+                      full={format(new Date(log.createdAt), "yyyy-MM-dd HH:mm:ss")}
+                      mono
+                    />
+                  </TableCell>
+                  <TableCell className="text-center">
+                    <CopyCell full={JSON.stringify(log.data)} mono />
                   </TableCell>
                 </TableRow>
               ))
