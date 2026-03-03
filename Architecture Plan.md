@@ -1,6 +1,6 @@
 # Metaphorical — 日志监控看板架构说明
 
-> **项目路径**：`f:/Graduation Project/Metaphorical/`  
+
 > **生产域名**：`https://metaphorical.yanmengsss.xyz/`  
 > **技术栈**：Next.js 16 · React 19 · Mongoose · shadcn/ui · TailwindCSS  
 > **部署方式**：Jenkins + Docker (`next start -p 6500`)
@@ -9,7 +9,7 @@
 
 ## 一、项目定位
 
-Metaphorical 是整个毕业项目的**集中式日志监控看板**，接收来自各项目通过 `yanmengs-logs` SDK 上报的运行日志，并提供可视化查询界面。开发者/运维人员可按项目、时间、日志级别等维度筛选查看。
+Metaphorical 是整个系统的**集中式日志监控看板**，接收来自各项目通过 `yanmengs-logs` SDK 上报的运行日志，并提供可视化查询界面。开发者/运维人员可按项目、时间、日志级别等维度筛选查看。
 
 ---
 

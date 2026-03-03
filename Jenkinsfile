@@ -34,26 +34,15 @@ pipeline {
                 script {
                     echo "Deploying Docker Container: ${CONTAINER_NAME}..."
 
-                    // 检查并清理旧容器，防止端口冲突和重名报错
-                    sh "docker stop ${CONTAINER_NAME} || true"
-                    sh "docker rm ${CONTAINER_NAME} || true"
+                    // 检查并清理旧容器，防止端口冲突和重名报错（仅在容器存在时才操作，避免打印无意义报错）
+                    sh """
+                        if docker inspect ${CONTAINER_NAME} > /dev/null 2>&1; then
+                            docker stop ${CONTAINER_NAME}
+                            docker rm ${CONTAINER_NAME}
+                        fi
+                    """
 
-                    // -- 使用 Jenkins 凭据中的 Secret file 注入 .env 变量 --
-                    withCredentials([file(credentialsId: "${CRED_ID}", variable: 'SECRET_ENV_FILE')]) {
-                        echo "Starting new container with environment file for ${APP_NAME}..."
-
-                        sh """
-                            docker run -d \\
-                                --name ${CONTAINER_NAME} \\
-                                --restart unless-stopped \\
-                                -p 6500:6500 \\
-                                --env-file "\${SECRET_ENV_FILE}" \\
-                                ${IMAGE_NAME}:latest
-                        """
-                    }
-
-                    // -- 如果不需要注入外部环境变量，可以用下面这段替代上面的 withCredentials 块 --
-                    /*
+                    echo "Starting new container for ${APP_NAME}..."
                     sh """
                         docker run -d \\
                             --name ${CONTAINER_NAME} \\
@@ -61,7 +50,6 @@ pipeline {
                             -p 6500:6500 \\
                             ${IMAGE_NAME}:latest
                     """
-                    */
                 }
             }
         }
