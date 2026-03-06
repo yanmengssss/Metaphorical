@@ -98,22 +98,63 @@ logger.error('api_error', { error: 'timeout', url: '/api/chat' });
 
 ## 快速开始
 
+### 本地开发启动
+
 ```bash
+# 1. 安装依赖
 pnpm install
+
+# 2. 配置环境变量
+echo 'MONGODB_URI=mongodb://...' > .env.local
+
+# 3. 启动开发服务器（访问 http://localhost:3000）
 pnpm dev
 ```
 
+### 生产启动
+
+```bash
+# 构建生产产物
+next build
+
+# 启动生产服务（端口 6500）
+next start -p 6500
+```
+
 **关键环境变量：**
-- `MONGODB_URI` — MongoDB 连接串
+
+| 变量名 | 说明 |
+|--------|------|
+| `MONGODB_URI` | MongoDB 连接串 |
 
 ---
 
-## 部署
+## Docker 启动
+
+### 方式一：直接 Docker 构建运行
 
 ```bash
-# 生产构建与启动
-next build && next start -p 6500
+# 1. 构建镜像（多阶段构建：node:20-alpine）
+docker build -t metaphorical .
 
-# Jenkins + Docker 自动化部署
+# 2. 运行容器（端口 6500）
+docker run -d \
+  --name metaphorical \
+  -p 6500:6500 \
+  -e MONGODB_URI="mongodb://..." \
+  metaphorical
+```
+
+### 方式二：Jenkins + Docker 自动化部署（生产环境）
+
+```bash
+# Jenkins Pipeline 自动触发：
+# 1. 拉取代码 → 构建 Docker 镜像（pnpm build → Next.js standalone）
+# 2. 推送镜像到 Registry
+# 3. 远程服务器拉取并重启容器
+# 容器内运行：node server.js（端口 6500）
 # 域名：metaphorical.yanmengsss.xyz
 ```
+
+- **暴露端口**：`6500`
+- **域名**：[metaphorical.yanmengsss.xyz](https://metaphorical.yanmengsss.xyz)
