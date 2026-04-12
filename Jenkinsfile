@@ -6,7 +6,7 @@ pipeline {
         IMAGE_NAME = "docker-image-${APP_NAME}"
         CONTAINER_NAME = "container-${APP_NAME}"
         // Jenkins global secret file credential id for injected metaphorical.properties
-        CRED_ID = 'metaphorical.properties'
+        CRED_ID = 'metaphorical'
     }
 
     stages {
