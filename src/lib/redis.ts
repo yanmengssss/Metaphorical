@@ -1,6 +1,9 @@
 import Redis from 'ioredis';
 
-const REDIS_URL = process.env.REDIS_URL || 'redis://localhost:6379';
+const REDIS_URL =
+  process.env.REDIS_DATABASE_URL ||
+  process.env.REDIS_URL ||
+  'redis://localhost:6379';
 
 declare global {
   var redis: Redis | undefined;
