@@ -1,0 +1,44 @@
+name: metaphorical
+
+services:
+  app:
+    build:
+      context: .
+    image: metaphorical:local
+    init: true
+    environment:
+      MONGODB_URI: mongodb://mongodb:27017/${MONGODB_DATABASE:-metaphorical}
+      REDIS_URL: ${REDIS_URL:?REDIS_URL is required}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    ports:
+      - "${METAPHORICAL_PORT:-6500}:6500"
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://127.0.0.1:6500/"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    restart: unless-stopped
+
+  mongodb:
+    image: mongo:8
+    environment:
+      MONGO_INITDB_DATABASE: ${MONGODB_DATABASE:-metaphorical}
+    ports:
+      - "${MONGODB_PORT:-27017}:27017"
+    volumes:
+      - mongodb_data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    restart: unless-stopped
+
+volumes:
+  mongodb_data:
