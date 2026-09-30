@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import Navbar from "@/components/Navbar";
 import { Toaster } from "@/components/ui/sonner";
+import { AuthSessionGate } from "@/components/AuthSessionGate";
 
 export const metadata: Metadata = {
   title: "Metaphorical 日志管理",
@@ -18,11 +19,13 @@ export default function RootLayout({
       <body
         className="antialiased min-h-screen bg-gray-50"
       >
-        <Navbar />
-        <main className="container mx-auto px-4 py-8">
-          {children}
-        </main>
-        <Toaster />
+        <AuthSessionGate>
+          <Navbar />
+          <main className="w-full px-4 py-8">
+            {children}
+          </main>
+          <Toaster />
+        </AuthSessionGate>
       </body>
     </html>
   );

@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
+import { apiFetch } from "@/lib/auth-client";
 
 interface Project {
   _id: string;
@@ -33,7 +34,7 @@ export function ProjectList({ projects, loading, onUpdate }: ProjectListProps) {
   const handleStatusChange = async (id: string, currentStatus: string) => {
     const newStatus = currentStatus === "active" ? "banned" : "active";
     try {
-      const res = await fetch(`/api/projects/${id}`, {
+      const res = await apiFetch(`/api/projects/${id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status: newStatus }),

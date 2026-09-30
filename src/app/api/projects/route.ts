@@ -4,9 +4,11 @@ import connectToDatabase from '@/lib/mongodb';
 import { Project } from '@/models';
 import { successResponse, errorResponse } from '@/lib/api-response';
 import { v4 as uuidv4 } from 'uuid';
+import { getAuthenticatedUser } from '@/lib/auth-server';
 
 export async function POST(req: NextRequest) {
   try {
+    if (!await getAuthenticatedUser(req)) return errorResponse('UNAUTHENTICATED', 401);
     await connectToDatabase();
     const body = await req.json();
     const { name } = body;
@@ -25,8 +27,9 @@ export async function POST(req: NextRequest) {
   }
 }
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
+    if (!await getAuthenticatedUser(req)) return errorResponse('UNAUTHENTICATED', 401);
     await connectToDatabase();
     const projects = await Project.find({}).sort({ createdAt: -1 });
     return successResponse(projects);

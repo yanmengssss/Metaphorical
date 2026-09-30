@@ -2,9 +2,11 @@ import { NextRequest } from 'next/server';
 import connectToDatabase from '@/lib/mongodb';
 import { Project } from '@/models';
 import { successResponse, errorResponse } from '@/lib/api-response';
+import { getAuthenticatedUser } from '@/lib/auth-server';
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    if (!await getAuthenticatedUser(req)) return errorResponse('UNAUTHENTICATED', 401);
     await connectToDatabase();
     const { id } = await params;
     const project = await Project.findById(id);
@@ -22,6 +24,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
 
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    if (!await getAuthenticatedUser(req)) return errorResponse('UNAUTHENTICATED', 401);
     await connectToDatabase();
     const { id } = await params;
     const body = await req.json();

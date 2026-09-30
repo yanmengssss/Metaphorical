@@ -14,6 +14,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
+import { apiFetch } from "@/lib/auth-client";
 
 interface EditProjectDialogProps {
     project: any;
@@ -43,7 +44,7 @@ export function EditProjectDialog({
 
         setLoading(true);
         try {
-            const res = await fetch(`/api/projects/${project._id}`, {
+            const res = await apiFetch(`/api/projects/${project._id}`, {
                 method: "PUT",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ name }),

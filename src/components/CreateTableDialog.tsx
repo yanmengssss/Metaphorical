@@ -32,6 +32,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
+import { apiFetch } from "@/lib/auth-client";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
 const schema = z.object({
@@ -93,7 +94,7 @@ export function CreateTableDialog({
   const handleSubmit = async (values: TableFormValues) => {
     setLoading(true);
     try {
-      const res = await fetch(`/api/projects/${projectId}/tables`, {
+      const res = await apiFetch(`/api/projects/${projectId}/tables`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(values),

@@ -3,7 +3,7 @@
 
 import React, { useEffect, useState } from "react";
 import { format } from "date-fns";
-import { RefreshCw, Copy } from "lucide-react";
+import { ChevronLeft, ChevronRight, RefreshCw, Copy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -17,6 +17,7 @@ import {
 import { DatePicker } from "@/components/DatePicker";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
+import { apiFetch } from "@/lib/auth-client";
 import {
   Tooltip,
   TooltipContent,
@@ -25,6 +26,9 @@ import {
 } from "@/components/ui/tooltip";
 
 const MAX_CELL_LEN = 28;
+const PAGE_SIZE = 50;
+
+type Pagination = { page: number; pageSize: number; total: number; totalPages: number };
 
 function truncate(str: string, max = MAX_CELL_LEN) {
   return str.length > max ? str.slice(0, max) + "…" : str;
@@ -58,24 +62,27 @@ function CopyCell({ full, display, mono = false, children }: { full: string; dis
 export default function GlobalLogs() {
   const [logs, setLogs] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [pagination, setPagination] = useState<Pagination>({ page: 1, pageSize: PAGE_SIZE, total: 0, totalPages: 1 });
 
   // Filters
   const [filterLogId, setFilterLogId] = useState("");
   const [startDate, setStartDate] = useState<Date>();
   const [endDate, setEndDate] = useState<Date>();
 
-  const fetchLogs = async () => {
+  const fetchLogs = async (page = pagination.page) => {
     try {
       setLoading(true);
       const params = new URLSearchParams();
       if (filterLogId) params.append("logId", filterLogId);
       if (startDate) params.append("startTime", startDate.toISOString());
       if (endDate) params.append("endTime", endDate.toISOString());
+      params.append("page", String(page));
 
-      const res = await fetch(`/api/logs?${params.toString()}`);
+      const res = await apiFetch(`/api/logs?${params.toString()}`);
       const data = await res.json();
       if (data.code === 200) {
-        setLogs(data.data);
+        setLogs(data.data.logs ?? []);
+        setPagination(data.data.pagination ?? { page, pageSize: PAGE_SIZE, total: 0, totalPages: 1 });
       } else {
         toast.error(data.msg);
       }
@@ -91,10 +98,10 @@ export default function GlobalLogs() {
   }, []);
 
   return (
-    <div className="space-y-6">
+    <div className="flex h-[calc(100dvh-8rem)] min-h-0 flex-col gap-6">
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold tracking-tight text-gray-900">Global Logs</h1>
-        <Button variant="outline" size="sm" onClick={fetchLogs}>
+        <Button variant="outline" size="sm" onClick={() => fetchLogs()}>
           <RefreshCw className="mr-2 h-4 w-4" /> Refresh
         </Button>
       </div>
@@ -110,14 +117,14 @@ export default function GlobalLogs() {
           <DatePicker date={startDate} setDate={setStartDate} placeholder="Start Date" />
           <DatePicker date={endDate} setDate={setEndDate} placeholder="End Date" />
           <div className="flex justify-end md:col-start-4">
-            <Button onClick={fetchLogs} className="w-full">Apply Filters</Button>
+            <Button onClick={() => fetchLogs(1)} className="w-full">Apply Filters</Button>
           </div>
         </div>
       </div>
 
       {/* Logs Table */}
-      <div className="rounded-md border bg-white">
-        <Table>
+      <div className="min-h-0 flex-1 overflow-auto rounded-md border bg-white [scrollbar-gutter:stable]">
+        <Table containerClassName="overflow-visible">
           <TableHeader>
             <TableRow>
               <TableHead className="text-center w-[120px]">日志 ID</TableHead>
@@ -168,6 +175,18 @@ export default function GlobalLogs() {
             )}
           </TableBody>
         </Table>
+      </div>
+      <div className="flex shrink-0 flex-col gap-2 border-t pt-4 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
+        <span>共 {pagination.total} 条日志，每页最多 {PAGE_SIZE} 条</span>
+        <div className="flex items-center gap-2 self-end sm:self-auto">
+          <Button variant="outline" size="sm" onClick={() => fetchLogs(pagination.page - 1)} disabled={loading || pagination.page <= 1}>
+            <ChevronLeft className="h-4 w-4" /> 上一页
+          </Button>
+          <span className="min-w-20 text-center tabular-nums">{pagination.page} / {pagination.totalPages}</span>
+          <Button variant="outline" size="sm" onClick={() => fetchLogs(pagination.page + 1)} disabled={loading || pagination.page >= pagination.totalPages}>
+            下一页 <ChevronRight className="h-4 w-4" />
+          </Button>
+        </div>
       </div>
     </div>
   );

@@ -15,6 +15,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { Copy } from "lucide-react";
+import { apiFetch } from "@/lib/auth-client";
 
 interface CreateProjectDialogProps {
   open: boolean;
@@ -37,7 +38,7 @@ export function CreateProjectDialog({
 
     setLoading(true);
     try {
-      const res = await fetch("/api/projects", {
+      const res = await apiFetch("/api/projects", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name }),

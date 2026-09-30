@@ -20,6 +20,7 @@ import { ProjectList } from "@/components/ProjectList";
 import { TableList } from "@/components/TableList";
 import { TableLogsView } from "@/components/TableLogsView";
 import { toast } from "sonner";
+import { apiFetch } from "@/lib/auth-client";
 
 function DashboardContent() {
   const router = useRouter();
@@ -46,7 +47,7 @@ function DashboardContent() {
   const fetchProjects = async () => {
     try {
       setLoadingProjects(true);
-      const res = await fetch("/api/projects");
+      const res = await apiFetch("/api/projects");
       const data = await res.json();
       if (data.code === 200) {
         setProjects(data.data);
@@ -70,7 +71,7 @@ function DashboardContent() {
     }
     try {
       setLoadingTables(true);
-      const res = await fetch(`/api/projects/${pId}/tables`);
+      const res = await apiFetch(`/api/projects/${pId}/tables`);
       const data = await res.json();
       if (data.code === 200) {
         setTables(data.data);

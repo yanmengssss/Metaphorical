@@ -32,6 +32,7 @@ import {
     SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
+import { apiFetch } from "@/lib/auth-client";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
 const schema = z.object({
@@ -108,7 +109,7 @@ export function EditTableDialog({
         if (!table) return;
         setLoading(true);
         try {
-            const res = await fetch(`/api/tables/${table._id}`, {
+            const res = await apiFetch(`/api/tables/${table._id}`, {
                 method: "PUT",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(values),

@@ -4,7 +4,7 @@ import { LayoutDashboard, FileText } from 'lucide-react';
 export default function Navbar() {
   return (
     <nav className="border-b bg-white shadow-sm">
-      <div className="container mx-auto px-4 h-16 flex items-center justify-between">
+      <div className="flex h-16 w-full items-center justify-between px-4">
         <div className="flex items-center gap-8">
           <Link href="/" className="text-xl font-bold text-gray-900 flex items-center gap-2">
             <LayoutDashboard className="w-6 h-6" />

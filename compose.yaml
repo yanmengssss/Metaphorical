@@ -9,6 +9,8 @@ services:
     environment:
       MONGODB_URI: mongodb://mongodb:27017/${MONGODB_DATABASE:-metaphorical}
       REDIS_URL: ${REDIS_URL:?REDIS_URL is required}
+      # 统一用户服务网关；容器中默认访问宿主机上的开发网关。
+      GATEWAY_URL: ${GATEWAY_URL:-http://host.docker.internal:4400}
     extra_hosts:
       - "host.docker.internal:host-gateway"
     ports:

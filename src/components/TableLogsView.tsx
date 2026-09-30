@@ -3,7 +3,7 @@
 
 import React, { useEffect, useState } from "react";
 import { format } from "date-fns";
-import { RefreshCw, Download, Copy } from "lucide-react";
+import { ChevronLeft, ChevronRight, RefreshCw, Download, Copy } from "lucide-react";
 import {
     Tooltip,
     TooltipContent,
@@ -37,8 +37,12 @@ import {
 } from "@/components/ui/table";
 import { DatePicker } from "@/components/DatePicker";
 import { toast } from "sonner";
+import { apiFetch } from "@/lib/auth-client";
 
 const MAX_CELL_LEN = 24;
+const PAGE_SIZE = 50;
+
+type Pagination = { page: number; pageSize: number; total: number; totalPages: number };
 
 function truncate(str: string, max = MAX_CELL_LEN) {
     return str.length > max ? str.slice(0, max) + "…" : str;
@@ -78,6 +82,7 @@ export function TableLogsView({ projectId, tableId }: TableLogsViewProps) {
     const [table, setTable] = useState<any>(null);
     const [logs, setLogs] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [pagination, setPagination] = useState<Pagination>({ page: 1, pageSize: PAGE_SIZE, total: 0, totalPages: 1 });
 
     // Filters
     const [filterLogId, setFilterLogId] = useState("");
@@ -91,7 +96,7 @@ export function TableLogsView({ projectId, tableId }: TableLogsViewProps) {
     const fetchTableAndLogs = async () => {
         try {
             setLoading(true);
-            const tRes = await fetch(`/api/tables/${tableId}`);
+            const tRes = await apiFetch(`/api/tables/${tableId}`);
             const tData = await tRes.json();
             if (tData.code === 200) {
                 setTable(tData.data);
@@ -108,7 +113,7 @@ export function TableLogsView({ projectId, tableId }: TableLogsViewProps) {
         }
     };
 
-    const fetchLogs = async (currentTableId = tableId) => {
+    const fetchLogs = async (currentTableId = tableId, page = pagination.page) => {
         try {
             const params = new URLSearchParams();
             params.append("tableId", currentTableId);
@@ -116,11 +121,13 @@ export function TableLogsView({ projectId, tableId }: TableLogsViewProps) {
             if (filterMessageType && filterMessageType !== "all") params.append("messageType", filterMessageType);
             if (startDate) params.append("startTime", startDate.toISOString());
             if (endDate) params.append("endTime", endDate.toISOString());
+            params.append("page", String(page));
 
-            const res = await fetch(`/api/logs?${params.toString()}`);
+            const res = await apiFetch(`/api/logs?${params.toString()}`);
             const data = await res.json();
             if (data.code === 200) {
-                setLogs(data.data);
+                setLogs(data.data.logs ?? []);
+                setPagination(data.data.pagination ?? { page, pageSize: PAGE_SIZE, total: 0, totalPages: 1 });
             } else {
                 toast.error(data.msg);
             }
@@ -162,7 +169,7 @@ export function TableLogsView({ projectId, tableId }: TableLogsViewProps) {
     if (!table) return null;
 
     return (
-        <div className="space-y-4">
+        <div className="flex h-[calc(100dvh-22rem)] min-h-0 flex-col gap-4">
             <div className="flex justify-between items-center">
                 <h2 className="text-lg font-semibold">{table.label} 日志</h2>
                 <div className="flex items-center gap-2">
@@ -198,13 +205,13 @@ export function TableLogsView({ projectId, tableId }: TableLogsViewProps) {
                     <DatePicker date={endDate} setDate={setEndDate} placeholder="结束日期" />
                 </div>
                 <div className="flex justify-end border-t pt-4 mt-2">
-                    <Button onClick={() => fetchLogs()}>应用筛选</Button>
+                    <Button onClick={() => fetchLogs(tableId, 1)}>应用筛选</Button>
                 </div>
             </div>
 
             {/* Logs Table */}
-            <div className="rounded-md border bg-white overflow-hidden">
-                <Table>
+            <div className="min-h-0 flex-1 overflow-auto rounded-md border bg-white [scrollbar-gutter:stable]">
+                <Table containerClassName="overflow-visible">
                     <TableHeader>
                         <TableRow>
                             <TableHead className="text-center">日志 ID</TableHead>
@@ -264,6 +271,18 @@ export function TableLogsView({ projectId, tableId }: TableLogsViewProps) {
                         )}
                     </TableBody>
                 </Table>
+            </div>
+            <div className="flex shrink-0 flex-col gap-2 border-t pt-4 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
+                <span>共 {pagination.total} 条日志，每页最多 {PAGE_SIZE} 条</span>
+                <div className="flex items-center gap-2 self-end sm:self-auto">
+                    <Button variant="outline" size="sm" onClick={() => fetchLogs(tableId, pagination.page - 1)} disabled={loading || pagination.page <= 1}>
+                        <ChevronLeft className="h-4 w-4" /> 上一页
+                    </Button>
+                    <span className="min-w-20 text-center tabular-nums">{pagination.page} / {pagination.totalPages}</span>
+                    <Button variant="outline" size="sm" onClick={() => fetchLogs(tableId, pagination.page + 1)} disabled={loading || pagination.page >= pagination.totalPages}>
+                        下一页 <ChevronRight className="h-4 w-4" />
+                    </Button>
+                </div>
             </div>
 
             <Dialog open={isExportDialogOpen} onOpenChange={setIsExportDialogOpen}>
