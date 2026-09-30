@@ -25,7 +25,7 @@ export async function apiFetch(url: string, init: RequestInit = {}): Promise<Res
   return response;
 }
 
-export function redirectToLogin(logout = false): void {
+export function redirectToLogin(): void {
   if (typeof window === "undefined" || redirectingToLogin) return;
   redirectingToLogin = true;
   setAccessToken(null);
@@ -33,7 +33,17 @@ export function redirectToLogin(logout = false): void {
   callback.searchParams.delete("code");
   const userService = (process.env.NEXT_PUBLIC_USER_SERVICE_WEB_URL ?? process.env.NEXT_PUBLIC_USER_LOGIN_URL ?? "http://localhost:4500").replace(/\/+$/u, "");
   const loginUrl = new URL(`${userService}/pc/login`);
-  if (logout) loginUrl.searchParams.set("logout", "1");
   loginUrl.searchParams.set("service", callback.toString());
   window.location.replace(loginUrl.toString());
+}
+
+/** 中央退出成功或凭据已失效后，清理本地 token 并返回统一登录页。 */
+export async function logout(): Promise<void> {
+  const response = await authenticatedFetch("/api/auth/logout", { method: "POST" });
+  if (response.status !== 401) {
+    const body = await response.json().catch(() => null);
+    if (!response.ok || body?.ok !== true) throw new Error("退出登录失败，请稍后重试。");
+  }
+  setAccessToken(null);
+  redirectToLogin();
 }
