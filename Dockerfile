@@ -1,4 +1,4 @@
-ARG NODE_IMAGE=yemengs/logboard:20260924
+ARG NODE_IMAGE=yemengs/cli-manger:20260924
 
 # ==========================================
 # 阶段 1：安装依赖包
