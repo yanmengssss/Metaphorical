@@ -6,10 +6,11 @@ import { getAuthenticatedUser } from '@/lib/auth-server';
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    if (!await getAuthenticatedUser(req)) return errorResponse('UNAUTHENTICATED', 401);
+    const user = await getAuthenticatedUser(req);
+    if (!user) return errorResponse('UNAUTHENTICATED', 401);
     await connectToDatabase();
     const { id } = await params;
-    const project = await Project.findById(id);
+    const project = await Project.findOne({ _id: id, ownerUserId: user.userId });
 
     if (!project) {
       return errorResponse('Project not found', 404);
@@ -24,7 +25,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
 
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    if (!await getAuthenticatedUser(req)) return errorResponse('UNAUTHENTICATED', 401);
+    const user = await getAuthenticatedUser(req);
+    if (!user) return errorResponse('UNAUTHENTICATED', 401);
     await connectToDatabase();
     const { id } = await params;
     const body = await req.json();
@@ -38,8 +40,8 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     if (status) updateData.status = status;
     if (name) updateData.name = name;
 
-    const project = await Project.findByIdAndUpdate(
-      id,
+    const project = await Project.findOneAndUpdate(
+      { _id: id, ownerUserId: user.userId },
       { $set: updateData },
       { new: true }
     );

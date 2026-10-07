@@ -3,6 +3,7 @@ import mongoose, { Schema, Document, Model } from 'mongoose';
 
 // --- Project Schema ---
 export interface IProject extends Document {
+  ownerUserId: string;
   name: string;
   key: string;
   status: 'active' | 'banned';
@@ -11,6 +12,7 @@ export interface IProject extends Document {
 }
 
 const ProjectSchema: Schema = new Schema({
+  ownerUserId: { type: String, required: true, index: true },
   name: { type: String, required: true },
   key: { type: String, required: true, unique: true },
   status: { type: String, enum: ['active', 'banned'], default: 'active' },

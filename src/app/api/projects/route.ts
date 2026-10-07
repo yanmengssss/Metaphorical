@@ -8,7 +8,8 @@ import { getAuthenticatedUser } from '@/lib/auth-server';
 
 export async function POST(req: NextRequest) {
   try {
-    if (!await getAuthenticatedUser(req)) return errorResponse('UNAUTHENTICATED', 401);
+    const user = await getAuthenticatedUser(req);
+    if (!user) return errorResponse('UNAUTHENTICATED', 401);
     await connectToDatabase();
     const body = await req.json();
     const { name } = body;
@@ -18,7 +19,7 @@ export async function POST(req: NextRequest) {
     }
 
     const key = uuidv4();
-    const project = await Project.create({ name, key });
+    const project = await Project.create({ name, key, ownerUserId: user.userId });
 
     return successResponse(project, 'Project created successfully');
   } catch (error: any) {
@@ -29,9 +30,10 @@ export async function POST(req: NextRequest) {
 
 export async function GET(req: NextRequest) {
   try {
-    if (!await getAuthenticatedUser(req)) return errorResponse('UNAUTHENTICATED', 401);
+    const user = await getAuthenticatedUser(req);
+    if (!user) return errorResponse('UNAUTHENTICATED', 401);
     await connectToDatabase();
-    const projects = await Project.find({}).sort({ createdAt: -1 });
+    const projects = await Project.find({ ownerUserId: user.userId }).sort({ createdAt: -1 });
     return successResponse(projects);
   } catch (error: any) {
     console.error('List Projects Error:', error);

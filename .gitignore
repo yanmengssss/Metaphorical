@@ -42,3 +42,6 @@ next-env.d.ts
 
 # Jenkins injected secret file
 metaphorical.properties
+
+# Ownership migration snapshots
+/.migration-backups/

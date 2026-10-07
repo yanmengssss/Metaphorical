@@ -25,3 +25,9 @@ curl -X POST 'http://metaphorical.app.svc.cluster.local:6500/api/logs/report' \
 登录页面直接访问 `NEXT_PUBLIC_USER_SERVICE_WEB_URL`，CAS 兑换和用户资料校验继续经 `GATEWAY_URL/user`；页面 token 保留在内存，业务请求沿用 Bearer 和现有 401 跳转。
 
 导航栏“退出登录”调用本地 `POST /api/auth/logout`，再经网关转发至 `/user/api/v1/users/logout`，撤销 Redis 中该用户唯一登录 token。成功或 401 后清理页面凭据，并自动跳转统一登录页，保留 service 以便登录后返回。网络、5xx 或异常响应保留凭据并提示重试；不会用 `logout=1` 重复撤销。其他网站／设备在后续鉴权时收到 401。
+
+## 项目用户归属
+
+项目保存 `ownerUserId`，由服务端取当前登录用户 ID 写入，项目列表按该字段过滤。表和日志沿用原有项目关联，不迁移日志正文，不对上报方增加身份要求。
+
+历史项目迁移脚本：`node scripts/assign-project-owner.cjs --plan .migration-backups/ownership.json` 保存项目及原归属快照；核对后以 `--apply` 和同一文件执行。必须在目标服务环境显式设置 MongoDB 连接及 `MIGRATION_OWNER_USER_ID`（先从线上用户服务或数据库核实邮箱对应 ID）。脚本只处理快照中的项目，可重复执行；不会把后续新建项目转给旧用户。快照目录不纳入 Git。
