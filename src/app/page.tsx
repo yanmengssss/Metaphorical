@@ -1,8 +1,8 @@
-/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unused-vars, react-hooks/exhaustive-deps */
+/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unused-vars */
 "use client";
 
-import { useEffect, useState, Suspense } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useRef, useState, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import { Plus, Settings, FileEdit } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -23,14 +23,15 @@ import { toast } from "sonner";
 import { apiFetch } from "@/lib/auth-client";
 
 function DashboardContent() {
-  const router = useRouter();
   const searchParams = useSearchParams();
 
   const projectId = searchParams.get("projectId") || "";
   const tableId = searchParams.get("tableId") || "";
 
   const [projects, setProjects] = useState<any[]>([]);
-  const [tables, setTables] = useState<any[]>([]);
+  const [tableResult, setTableResult] = useState<{ projectId: string; tables: any[] }>({ projectId: "", tables: [] });
+  const tables = tableResult.projectId === projectId ? tableResult.tables : [];
+  const tableRequest = useRef<AbortController | null>(null);
   const [loadingProjects, setLoadingProjects] = useState(true);
   const [loadingTables, setLoadingTables] = useState(false);
 
@@ -65,42 +66,56 @@ function DashboardContent() {
 
   // Fetch tables when project changes
   const fetchTables = async (pId: string) => {
+    tableRequest.current?.abort();
+    const controller = new AbortController();
+    tableRequest.current = controller;
     if (!pId) {
-      setTables([]);
+      setTableResult({ projectId: "", tables: [] });
+      setLoadingTables(false);
       return;
     }
     try {
       setLoadingTables(true);
-      const res = await apiFetch(`/api/projects/${pId}/tables`);
+      const res = await apiFetch(`/api/projects/${pId}/tables`, { signal: controller.signal });
       const data = await res.json();
+      if (controller.signal.aborted) return;
       if (data.code === 200) {
-        setTables(data.data);
+        setTableResult({ projectId: pId, tables: data.data });
+      } else {
+        setTableResult({ projectId: pId, tables: [] });
+        toast.error(data.msg || "获取表失败");
       }
     } catch (error) {
-      toast.error("获取表失败")
+      if (!controller.signal.aborted) toast.error("获取表失败");
     } finally {
-      setLoadingTables(false);
+      if (!controller.signal.aborted) setLoadingTables(false);
     }
   };
 
   useEffect(() => {
     fetchTables(projectId);
+    return () => tableRequest.current?.abort();
   }, [projectId]);
 
+  // These selections only filter client data; avoid waiting for a server navigation.
+  const updateSelection = (nextProjectId: string, nextTableId = "") => {
+    const url = new URL(window.location.href);
+    url.searchParams.delete("projectId");
+    url.searchParams.delete("tableId");
+    if (nextProjectId) url.searchParams.set("projectId", nextProjectId);
+    if (nextProjectId && nextTableId) url.searchParams.set("tableId", nextTableId);
+    window.history.pushState(null, "", `${url.pathname}${url.search}${url.hash}`);
+    setSelectedTableForEdit(null);
+    setIsEditTableOpen(false);
+    setIsEditProjectOpen(false);
+  };
+
   const handleProjectChange = (val: string) => {
-    if (val === "all") {
-      router.push(`/`);
-    } else {
-      router.push(`/?projectId=${val}`);
-    }
+    updateSelection(val === "all" ? "" : val);
   };
 
   const handleTableChange = (val: string) => {
-    if (val === "all") {
-      router.push(`/?projectId=${projectId}`);
-    } else {
-      router.push(`/?projectId=${projectId}&tableId=${val}`);
-    }
+    updateSelection(projectId, val === "all" ? "" : val);
   };
 
   return (
@@ -195,7 +210,7 @@ function DashboardContent() {
             />
           </div>
         ) : (
-          <TableLogsView projectId={projectId} tableId={tableId} />
+          <TableLogsView key={`${projectId}:${tableId}`} projectId={projectId} tableId={tableId} />
         )}
       </div>
 
